@@ -14,20 +14,38 @@ A minimal Neovim plugin for conversational AI chat using OpenRouter API.
 
 ### Using vim.pack.add() (Neovim 0.10+)
 
+Simplest method:
+
 ```lua
 -- init.lua
 vim.pack.add('https://github.com/0xinuarashi/nvim-ai-openrouter')
 ```
 
-Or with configuration:
+Adding to existing pack.add() call:
 
 ```lua
 vim.pack.add({
-    'https://github.com/0xinuarashi/nvim-ai-openrouter',
-    config = function()
-        vim.g.ai_openrouter_api_key = 'your-key-here'
-    end
+    {src = "https://github.com/your-plugin-1"},
+    {src = "https://github.com/your-plugin-2"},
+    {src = "https://github.com/0xinuarashi/nvim-ai-openrouter"},
 })
+```
+
+Or with configuration (add to your existing pack list):
+
+```lua
+vim.pack.add({
+    {src = "https://github.com/0xinuarashi/nvim-ai-openrouter"},
+})
+
+-- Then configure separately:
+vim.g.ai_openrouter_api_key = 'your-key-here'
+```
+
+**Alternative (if using single pack.add() call):**
+
+```lua
+vim.pack.add('https://github.com/0xinuarashi/nvim-ai-openrouter')
 ```
 
 ### Using packer.nvim

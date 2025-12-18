@@ -145,11 +145,6 @@ end
 
 -- Setup keymaps for input buffer
 local function setup_keymaps()
-    vim.api.nvim_buf_set_keymap(M.state.input_buffer_id, 'n', 'q', ':lua require("ai_router").close_chat()<CR>', {
-        noremap = true,
-        silent = true,
-    })
-
     vim.api.nvim_buf_set_keymap(M.state.input_buffer_id, 'n', 'q', ':lua require("ai_openrouter").close_chat()<CR>', {
         noremap = true,
         silent = true,
@@ -176,7 +171,7 @@ local function create_windows()
     -- Create main chat buffer
     M.state.buffer_id = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_option(M.state.buffer_id, 'modifiable', true)
-    vim.api.nvim_buf_set_option(M.state.buffer_id, 'filetype', 'ai_router')
+    vim.api.nvim_buf_set_option(M.state.buffer_id, 'filetype', 'ai_openrouter')
 
     -- Create input buffer
     M.state.input_buffer_id = vim.api.nvim_create_buf(false, true)
