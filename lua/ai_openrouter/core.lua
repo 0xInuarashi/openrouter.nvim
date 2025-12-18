@@ -24,9 +24,12 @@ M.state = {
 
 -- Initialize configuration from global settings
 local function init_config()
+    print("DEBUG: vim.g.ai_openrouter_api_key = " .. tostring(vim.g.ai_openrouter_api_key))
+    print("DEBUG: M.config.api_key before = " .. tostring(M.config.api_key))
     if vim.g.ai_openrouter_api_key and vim.g.ai_openrouter_api_key ~= '' then
         M.config.api_key = vim.g.ai_openrouter_api_key
     end
+    print("DEBUG: M.config.api_key after = " .. tostring(M.config.api_key))
     if vim.g.ai_openrouter_model and vim.g.ai_openrouter_model ~= '' then
         M.config.model = vim.g.ai_openrouter_model
     end
@@ -37,6 +40,7 @@ end
 
 -- Make API request to OpenRouter
 local function call_openrouter(messages)
+    print("DEBUG: call_openrouter - M.config.api_key = " .. tostring(M.config.api_key))
     if M.config.api_key == '' then
         return nil, 'Error: OPENROUTER_API_KEY not set'
     end
