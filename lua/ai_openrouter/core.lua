@@ -26,17 +26,34 @@ local function ensure_state(buf)
   return M.state[buf]
 end
 
+local function normalize_lines(lines)
+  local out = {}
+  for _, line in ipairs(lines) do
+    if line == nil then
+      -- skip
+    else
+      local parts = vim.split(tostring(line), "\n", { plain = true })
+      for _, part in ipairs(parts) do
+        table.insert(out, part)
+      end
+    end
+  end
+  return out
+end
+
 local function append_chat(buf, lines)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
   end
+
+  local safe_lines = normalize_lines(lines)
 
   local line_count = vim.api.nvim_buf_line_count(buf)
   if line_count > 0 and vim.bo[buf].buftype == "prompt" then
     vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, {})
   end
 
-  vim.api.nvim_buf_set_lines(buf, -1, -1, false, lines)
+  vim.api.nvim_buf_set_lines(buf, -1, -1, false, safe_lines)
 
   if vim.bo[buf].buftype == "prompt" then
     vim.api.nvim_buf_set_lines(buf, -1, -1, false, { "" })
