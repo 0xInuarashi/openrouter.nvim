@@ -24,13 +24,13 @@ M.state = {
 
 -- Initialize configuration from global settings
 local function init_config()
-    if vim.g.ai_openrouter_api_key ~= '' then
+    if vim.g.ai_openrouter_api_key and vim.g.ai_openrouter_api_key ~= '' then
         M.config.api_key = vim.g.ai_openrouter_api_key
     end
-    if vim.g.ai_openrouter_model ~= '' then
+    if vim.g.ai_openrouter_model and vim.g.ai_openrouter_model ~= '' then
         M.config.model = vim.g.ai_openrouter_model
     end
-    if vim.g.ai_openrouter_temperature ~= '' then
+    if vim.g.ai_openrouter_temperature and vim.g.ai_openrouter_temperature ~= '' then
         M.config.temperature = vim.g.ai_openrouter_temperature
     end
 end
