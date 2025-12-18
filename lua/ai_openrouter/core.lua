@@ -44,6 +44,14 @@ local function parse_response(stdout)
     return nil, "failed to parse response"
   end
 
+  if decoded.error then
+    if type(decoded.error) == "table" then
+      local message = decoded.error.message or decoded.error.type or "request failed"
+      return nil, message
+    end
+    return nil, tostring(decoded.error)
+  end
+
   local choice = decoded.choices and decoded.choices[1]
   if not choice or not choice.message or not choice.message.content then
     return nil, "missing response content"
@@ -161,7 +169,7 @@ function M.ask(message)
   table.insert(messages, { role = "user", content = message })
   request(messages, function(content, err)
     if err then
-      vim.notify(err, vim.log.levels.ERROR)
+      vim.notify(sanitize_message(err), vim.log.levels.ERROR)
       return
     end
 
