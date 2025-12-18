@@ -3,7 +3,7 @@
 ## Project Structure
 
 ```
-nvim-ai-openrouter/
+nvim-ai-router/
 ├── plugin/
 │   └── ai_router.vim          # Plugin entry point and commands
 ├── lua/
@@ -76,7 +76,7 @@ The UI is created in the `create_windows()` function. Modify:
 The plugin works with any model available on OpenRouter. Just set:
 
 ```lua
-vim.g.ai_openrouter_model = 'model-name'
+vim.g.ai_router_model = 'model-name'
 ```
 
 See [OpenRouter documentation](https://openrouter.ai/docs) for available models.
@@ -103,7 +103,7 @@ To test the plugin:
 
 ### "Error: OPENROUTER_API_KEY not set"
 - Set the environment variable: `export OPENROUTER_API_KEY="..."`
-- Or set it in your Neovim config: `vim.g.ai_openrouter_api_key = '...'`
+- Or set it in your Neovim config: `vim.g.ai_router_api_key = '...'`
 
 ### API returns error
 - Check your API key is valid

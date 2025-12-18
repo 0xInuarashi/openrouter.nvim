@@ -1,10 +1,10 @@
 {
-  "name": "nvim-ai-openrouter",
+  "name": "nvim-ai-router",
   "version": "0.1.0",
   "description": "A minimal Neovim plugin for conversational AI chat using OpenRouter API",
   "repository": {
     "type": "git",
-    "url": "https://github.com/0xinuarashi/nvim-ai-openrouter"
+    "url": "https://github.com/0xinuarashi/nvim-ai-router"
   },
   "keywords": [
     "neovim",

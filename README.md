@@ -1,4 +1,4 @@
-# nvim-ai-openrouter
+# nvim-ai-router
 
 A minimal Neovim plugin for conversational AI chat using OpenRouter API.
 
@@ -12,59 +12,23 @@ A minimal Neovim plugin for conversational AI chat using OpenRouter API.
 
 ## Installation
 
-### Using vim.pack.add() (Neovim 0.10+)
-
-Simplest method:
+Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
 
 ```lua
--- init.lua
-vim.pack.add('https://github.com/0xinuarashi/nvim-ai-openrouter')
+use '0xinuarashi/nvim-ai-router'
 ```
 
-Adding to existing pack.add() call:
-
-```lua
-vim.pack.add({
-    {src = "https://github.com/your-plugin-1"},
-    {src = "https://github.com/your-plugin-2"},
-    {src = "https://github.com/0xinuarashi/nvim-ai-openrouter"},
-})
-```
-
-Or with configuration (add to your existing pack list):
-
-```lua
-vim.pack.add({
-    {src = "https://github.com/0xinuarashi/nvim-ai-openrouter"},
-})
-
--- Then configure separately:
-vim.g.ai_openrouter_api_key = 'your-key-here'
-```
-
-**Alternative (if using single pack.add() call):**
-
-```lua
-vim.pack.add('https://github.com/0xinuarashi/nvim-ai-openrouter')
-```
-
-### Using packer.nvim
-
-```lua
-use '0xinuarashi/nvim-ai-openrouter'
-```
-
-### Using vim-plug
+Using [vim-plug](https://github.com/junegunn/vim-plug):
 
 ```vim
-Plug '0xinuarashi/nvim-ai-openrouter'
+Plug '0xinuarashi/nvim-ai-router'
 ```
 
-### Using lazy.nvim
+Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-    '0xinuarashi/nvim-ai-openrouter',
+    '0xinuarashi/nvim-ai-router',
     config = function()
         -- Configuration here
     end,
@@ -83,16 +47,16 @@ Or configure it in your Neovim config:
 
 ```lua
 -- init.lua
-vim.g.ai_openrouter_api_key = 'your-api-key-here'
-vim.g.ai_openrouter_model = 'openrouter/auto'  -- optional
-vim.g.ai_openrouter_temperature = 0.7          -- optional
+vim.g.ai_router_api_key = 'your-api-key-here'
+vim.g.ai_router_model = 'openrouter/auto'  -- optional
+vim.g.ai_router_temperature = 0.7          -- optional
 ```
 
 ```vim
 " init.vim
-let g:ai_openrouter_api_key = 'your-api-key-here'
-let g:ai_openrouter_model = 'openrouter/auto'
-let g:ai_openrouter_temperature = 0.7
+let g:ai_router_api_key = 'your-api-key-here'
+let g:ai_router_model = 'openrouter/auto'
+let g:ai_router_temperature = 0.7
 ```
 
 ## Usage
@@ -125,7 +89,7 @@ Inside the chat window:
 ### API Key
 
 Set your OpenRouter API key. Priority order:
-1. `vim.g.ai_openrouter_api_key` (Neovim config)
+1. `vim.g.ai_router_api_key` (Neovim config)
 2. `OPENROUTER_API_KEY` (Environment variable)
 
 ### Model
@@ -150,7 +114,7 @@ Controls creativity (0.0 = deterministic, 1.0+ = very creative)
 
 ```lua
 -- In init.lua, modify before require:
-local ai_router = require('ai_openrouter')
+local ai_router = require('ai_router')
 ai_router.config.window_width = 0.8   -- 80% of screen width
 ai_router.config.window_height = 0.9  -- 90% of screen height
 ```
