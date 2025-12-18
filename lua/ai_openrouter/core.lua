@@ -60,17 +60,16 @@ local function parse_response(stdout)
   return choice.message.content, nil
 end
 
-local function build_curl_config(url, api_key, payload)
+local function build_curl_config(url, api_key)
   local lines = {
     "url = " .. url,
     "request = POST",
     "header = \"Authorization: Bearer " .. api_key .. "\"",
     "header = \"Content-Type: application/json\"",
-    "data = " .. vim.fn.json_encode(payload),
     "silent",
     "show-error",
   }
-  return table.concat(lines, "\n") .. "\n"
+  return lines
 end
 
 local function request(messages, cb)
@@ -95,17 +94,24 @@ local function request(messages, cb)
     messages = messages,
   }
 
-  local config_text = build_curl_config(url, api_key, payload)
+  local config_lines = build_curl_config(url, api_key)
+  local config_path = vim.fn.tempname()
+  vim.fn.writefile(config_lines, config_path)
+
+  local payload_json = vim.fn.json_encode(payload)
 
   local cmd = {
     "curl",
     "--config",
-    "-",
+    config_path,
+    "--data-binary",
+    "@-",
   }
 
   if vim.system then
-    vim.system(cmd, { text = true, stdin = config_text }, function(res)
+    vim.system(cmd, { text = true, stdin = payload_json }, function(res)
       vim.schedule(function()
+        pcall(vim.loop.fs_unlink, config_path)
         if res.code ~= 0 then
           cb(nil, res.stderr ~= "" and res.stderr or "request failed")
           return
@@ -137,6 +143,7 @@ local function request(messages, cb)
     end,
     on_exit = function(_, code)
       vim.schedule(function()
+        pcall(vim.loop.fs_unlink, config_path)
         if code ~= 0 then
           cb(nil, table.concat(stderr, "\n"))
           return
@@ -148,8 +155,10 @@ local function request(messages, cb)
     end,
   })
   if job_id > 0 then
-    vim.fn.chansend(job_id, config_text)
+    vim.fn.chansend(job_id, payload_json)
     vim.fn.chanclose(job_id, "stdin")
+  else
+    pcall(vim.loop.fs_unlink, config_path)
   end
 end
 
