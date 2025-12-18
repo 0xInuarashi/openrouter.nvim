@@ -11,7 +11,7 @@ vim.pack.add({ { src = "https://github.com/0xinuarashi/openrouter.nvim" } })
 ## Setup
 
 ```lua
-require("ai_openrouter").setup({
+require("openrouter").setup({
   api_key = "YOUR_OPENROUTER_KEY",
   model = "openai/gpt-4o-mini",
   system_prompt = "You are a concise assistant.",

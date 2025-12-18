@@ -38,46 +38,6 @@ local function validate_base_url(url)
   return url, nil
 end
 
-local function normalize_lines(lines)
-  local out = {}
-  for _, line in ipairs(lines) do
-    if line == nil then
-      -- skip
-    else
-      local parts = vim.split(tostring(line), "\n", { plain = true })
-      for _, part in ipairs(parts) do
-        table.insert(out, part)
-      end
-    end
-  end
-  return out
-end
-
-local function append_chat(buf, lines)
-  if not vim.api.nvim_buf_is_valid(buf) then
-    return
-  end
-
-  local safe_lines = normalize_lines(lines)
-
-  local line_count = vim.api.nvim_buf_line_count(buf)
-  if line_count > 0 and vim.bo[buf].buftype == "prompt" then
-    vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, {})
-  end
-
-  vim.api.nvim_buf_set_lines(buf, -1, -1, false, safe_lines)
-
-  if vim.bo[buf].buftype == "prompt" then
-    vim.api.nvim_buf_set_lines(buf, -1, -1, false, { "" })
-  end
-
-  local win = vim.fn.bufwinid(buf)
-  if win ~= -1 then
-    vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
-  end
-end
-
-
 local function parse_response(stdout)
   local ok, decoded = pcall(vim.fn.json_decode, stdout)
   if not ok or type(decoded) ~= "table" then
@@ -183,64 +143,6 @@ local function request(messages, cb)
     vim.fn.chansend(job_id, config_text)
     vim.fn.chanclose(job_id, "stdin")
   end
-end
-
-local function on_input(buf, input)
-  if not input or input == "" then
-    return
-  end
-
-  local messages = { { role = "user", content = input } }
-  append_chat(buf, { "You: " .. input, "" })
-
-  request(messages, function(content, err)
-    if not vim.api.nvim_buf_is_valid(buf) then
-      return
-    end
-
-    if err then
-      append_chat(buf, { "Error: " .. err, "" })
-      return
-    end
-
-    append_chat(buf, { "AI: " .. content, "" })
-  end)
-end
-
-function M.open_chat()
-  local api_key = get_api_key()
-  if not api_key then
-    vim.notify("OpenRouter API key not set", vim.log.levels.ERROR)
-    return
-  end
-
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_name(buf, "AI Chat")
-  vim.bo[buf].buftype = "prompt"
-  vim.bo[buf].bufhidden = "wipe"
-  vim.bo[buf].swapfile = false
-  vim.bo[buf].filetype = "ai_openrouter"
-  vim.bo[buf].modifiable = true
-  vim.bo[buf].undolevels = -1
-
-  vim.cmd("botright split")
-  vim.api.nvim_win_set_buf(0, buf)
-  vim.api.nvim_win_set_option(0, "wrap", true)
-
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-    "OpenRouter Chat",
-    "Enter a message and press <CR>. Use :q to close.",
-    "",
-    "",
-  })
-
-  vim.fn.prompt_setprompt(buf, "You: ")
-  vim.fn.prompt_setcallback(buf, function(input)
-    on_input(buf, input)
-  end)
-
-  vim.api.nvim_win_set_cursor(0, { vim.api.nvim_buf_line_count(buf), 0 })
-  vim.cmd("startinsert")
 end
 
 function M.ask(message)

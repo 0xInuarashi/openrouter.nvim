@@ -1,4 +1,4 @@
-local ok, ai = pcall(require, "ai_openrouter")
+local ok, ai = pcall(require, "openrouter")
 if not ok then
   return
 end
