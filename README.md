@@ -1,129 +1,36 @@
-# nvim-ai-router
+# nvim-ai-openrouter
 
-A minimal Neovim plugin for conversational AI chat using OpenRouter API.
+Minimal OpenRouter chat for Neovim.
 
-## Features
-
-- ✨ Simple and fast AI chat interface directly in Neovim
-- 💬 Conversational history within a session
-- 🎯 OpenRouter support for access to multiple AI models
-- 🎨 Clean, minimal UI with borders
-- ⚡ Non-blocking async operations
-
-## Installation
-
-Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
+## Install (Neovim 0.10+)
 
 ```lua
-use '0xinuarashi/nvim-ai-router'
-```
-
-Using [vim-plug](https://github.com/junegunn/vim-plug):
-
-```vim
-Plug '0xinuarashi/nvim-ai-router'
-```
-
-Using [lazy.nvim](https://github.com/folke/lazy.nvim):
-
-```lua
-{
-    '0xinuarashi/nvim-ai-router',
-    config = function()
-        -- Configuration here
-    end,
-}
+vim.pack.add({ { src = "/home/dev/git/0xinuarashi/nvim-ai-router" } })
 ```
 
 ## Setup
 
-Set your OpenRouter API key as an environment variable:
-
-```bash
-export OPENROUTER_API_KEY="your-api-key-here"
-```
-
-Or configure it in your Neovim config:
-
 ```lua
--- init.lua
-vim.g.ai_router_api_key = 'your-api-key-here'
-vim.g.ai_router_model = 'openrouter/auto'  -- optional
-vim.g.ai_router_temperature = 0.7          -- optional
+require("ai_openrouter").setup({
+  api_key = "YOUR_OPENROUTER_KEY",
+  model = "openai/gpt-4o-mini",
+})
 ```
 
-```vim
-" init.vim
-let g:ai_router_api_key = 'your-api-key-here'
-let g:ai_router_model = 'openrouter/auto'
-let g:ai_router_temperature = 0.7
-```
+You can also set `OPENROUTER_API_KEY` in your environment.
 
 ## Usage
 
-### Open Chat
+Run:
 
-```vim
-:AI
+```
+:ai
 ```
 
-### Clear History
+A prompt buffer opens; type a message and press `<CR>` to send.
 
-```vim
-:AIClear
-```
+## Options
 
-### Keybindings
-
-Inside the chat window:
-
-| Key | Action |
-|-----|--------|
-| `<C-CR>` (Insert) | Send message |
-| `<CR>` (Normal) | Send message |
-| `<C-c>` (Insert) | Close chat |
-| `q` (Normal) | Close chat |
-
-## Configuration
-
-### API Key
-
-Set your OpenRouter API key. Priority order:
-1. `vim.g.ai_router_api_key` (Neovim config)
-2. `OPENROUTER_API_KEY` (Environment variable)
-
-### Model
-
-Default: `openrouter/auto`
-
-Available models from OpenRouter:
-- `openrouter/auto` - Automatic model selection
-- `openai/gpt-4` - GPT-4
-- `openai/gpt-4-turbo` - GPT-4 Turbo
-- `openai/gpt-3.5-turbo` - GPT-3.5 Turbo
-- `anthropic/claude-2` - Claude 2
-- And many more...
-
-### Temperature
-
-Default: `0.7`
-
-Controls creativity (0.0 = deterministic, 1.0+ = very creative)
-
-### Window Size
-
-```lua
--- In init.lua, modify before require:
-local ai_router = require('ai_router')
-ai_router.config.window_width = 0.8   -- 80% of screen width
-ai_router.config.window_height = 0.9  -- 90% of screen height
-```
-
-## Requirements
-
-- Neovim 0.7+
-- curl (for API requests)
-
-## License
-
-MIT
+- `api_key`: OpenRouter API key. If unset, uses `OPENROUTER_API_KEY`.
+- `model`: OpenRouter model string. Default `openai/gpt-3.5-turbo`.
+- `base_url`: OpenRouter endpoint. Default `https://openrouter.ai/api/v1/chat/completions`.
