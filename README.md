@@ -28,7 +28,7 @@ Run:
 :AI <message>
 ```
 
-The response is printed via `:messages`.
+The response streams into a floating window; press `<CR>` or `q` to close it.
 
 ## Options
 

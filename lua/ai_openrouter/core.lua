@@ -25,39 +25,6 @@ local function sanitize_message(text)
   return tostring(text):gsub("[%z\1-\8\11\12\13\14-\31\127]", "")
 end
 
-local function start_spinner(label)
-  local frames = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
-  local idx = 1
-  local timer = vim.loop.new_timer()
-  local prev_cmdheight = vim.o.cmdheight
-
-  if prev_cmdheight == 0 then
-    vim.o.cmdheight = 1
-  end
-
-  local function render()
-    local text = frames[idx] .. " " .. label
-    vim.api.nvim_echo({ { text, "Comment" } }, false, {})
-    idx = (idx % #frames) + 1
-  end
-
-  vim.api.nvim_echo({ { "" } }, false, {})
-  render()
-  timer:start(120, 120, vim.schedule_wrap(render))
-  return { timer = timer, prev_cmdheight = prev_cmdheight }
-end
-
-local function stop_spinner(state)
-  if state and state.timer then
-    state.timer:stop()
-    state.timer:close()
-  end
-  if state and state.prev_cmdheight ~= nil then
-    vim.o.cmdheight = state.prev_cmdheight
-  end
-  vim.api.nvim_echo({ { "" } }, false, {})
-end
-
 local function validate_base_url(url)
   if type(url) ~= "string" or url == "" then
     return nil, "invalid base_url"
@@ -71,29 +38,7 @@ local function validate_base_url(url)
   return url, nil
 end
 
-local function parse_response(stdout)
-  local ok, decoded = pcall(vim.fn.json_decode, stdout)
-  if not ok or type(decoded) ~= "table" then
-    return nil, "failed to parse response"
-  end
-
-  if decoded.error then
-    if type(decoded.error) == "table" then
-      local message = decoded.error.message or decoded.error.type or "request failed"
-      return nil, message
-    end
-    return nil, tostring(decoded.error)
-  end
-
-  local choice = decoded.choices and decoded.choices[1]
-  if not choice or not choice.message or not choice.message.content then
-    return nil, "missing response content"
-  end
-
-  return choice.message.content, nil
-end
-
-local function build_curl_config(url, api_key)
+local function build_curl_config(url, api_key, extra_headers)
   local lines = {
     "url = " .. url,
     "request = POST",
@@ -102,14 +47,96 @@ local function build_curl_config(url, api_key)
     "silent",
     "show-error",
   }
+  if extra_headers then
+    for _, header in ipairs(extra_headers) do
+      table.insert(lines, "header = \"" .. header .. "\"")
+    end
+  end
   return lines
 end
 
-local function request(messages, cb)
+local function open_stream_window(question)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].bufhidden = "wipe"
+  vim.bo[buf].swapfile = false
+  vim.bo[buf].filetype = "openrouter"
+  vim.bo[buf].modifiable = false
+
+  local width = math.max(50, math.floor(vim.o.columns * 0.7))
+  local height = math.max(12, math.floor(vim.o.lines * 0.6))
+  width = math.min(width, vim.o.columns - 4)
+  height = math.min(height, vim.o.lines - 4)
+
+  local row = math.floor((vim.o.lines - height) / 2 - 1)
+  if row < 0 then
+    row = 0
+  end
+  local col = math.floor((vim.o.columns - width) / 2)
+  if col < 0 then
+    col = 0
+  end
+
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    row = row,
+    col = col,
+    width = width,
+    height = height,
+    style = "minimal",
+    border = "rounded",
+  })
+
+  vim.keymap.set("n", "<CR>", function()
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true)
+    end
+  end, { buffer = buf, silent = true, nowait = true })
+
+  vim.keymap.set("n", "q", function()
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true)
+    end
+  end, { buffer = buf, silent = true, nowait = true })
+
+  local function render(answer)
+    local lines = {
+      "Q: " .. sanitize_message(question),
+      "",
+      "A:",
+      "",
+    }
+
+    local parts = vim.split(answer or "", "\n", { plain = true })
+    if answer and answer:sub(-1) == "\n" then
+      table.insert(parts, "")
+    end
+    for _, part in ipairs(parts) do
+      table.insert(lines, part)
+    end
+
+    vim.bo[buf].modifiable = true
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.bo[buf].modifiable = false
+
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_set_cursor(win, { #lines, 0 })
+    end
+  end
+
+  render("")
+  return {
+    buf = buf,
+    win = win,
+    render = render,
+  }
+end
+
+local function request_stream(messages, on_chunk, on_done)
   local api_key = get_api_key()
   if not api_key then
     vim.schedule(function()
-      cb(nil, "missing OpenRouter API key")
+      on_done(nil, "missing OpenRouter API key")
     end)
     return
   end
@@ -117,7 +144,7 @@ local function request(messages, cb)
   local url, url_err = validate_base_url(M.config.base_url)
   if not url then
     vim.schedule(function()
-      cb(nil, url_err)
+      on_done(nil, url_err)
     end)
     return
   end
@@ -125,9 +152,10 @@ local function request(messages, cb)
   local payload = {
     model = M.config.model,
     messages = messages,
+    stream = true,
   }
 
-  local config_lines = build_curl_config(url, api_key)
+  local config_lines = build_curl_config(url, api_key, { "Accept: text/event-stream" })
   local config_path = vim.fn.tempname()
   vim.fn.writefile(config_lines, config_path)
 
@@ -137,36 +165,55 @@ local function request(messages, cb)
     "curl",
     "--config",
     config_path,
+    "--no-buffer",
     "--data-binary",
     "@-",
   }
 
-  if vim.system then
-    vim.system(cmd, { text = true, stdin = payload_json }, function(res)
-      vim.schedule(function()
-        pcall(vim.loop.fs_unlink, config_path)
-        if res.code ~= 0 then
-          cb(nil, res.stderr ~= "" and res.stderr or "request failed")
-          return
-        end
-
-        local content, err = parse_response(res.stdout)
-        cb(content, err)
-      end)
-    end)
-    return
-  end
-
   local stdout = {}
   local stderr = {}
+  local done = false
+  local response = ""
 
   local job_id = vim.fn.jobstart(cmd, {
-    stdout_buffered = true,
+    stdout_buffered = false,
     stderr_buffered = true,
     stdin = "pipe",
     on_stdout = function(_, data)
-      if data then
-        table.insert(stdout, table.concat(data, "\n"))
+      if not data then
+        return
+      end
+      for _, line in ipairs(data) do
+        if line and line ~= "" then
+          local payload_line = line:match("^data:%s*(.*)")
+          if payload_line then
+            if payload_line == "[DONE]" then
+              done = true
+              on_done(response, nil)
+              return
+            end
+            local ok, decoded = pcall(vim.fn.json_decode, payload_line)
+            if ok and decoded then
+              if decoded.error then
+                local msg = decoded.error.message or decoded.error.type or "request failed"
+                done = true
+                on_done(nil, msg)
+                return
+              end
+              local choice = decoded.choices and decoded.choices[1]
+              local delta = ""
+              if choice and choice.delta and choice.delta.content then
+                delta = choice.delta.content
+              elseif choice and choice.message and choice.message.content then
+                delta = choice.message.content
+              end
+              if delta ~= "" then
+                response = response .. delta
+                on_chunk(delta, response)
+              end
+            end
+          end
+        end
       end
     end,
     on_stderr = function(_, data)
@@ -177,13 +224,14 @@ local function request(messages, cb)
     on_exit = function(_, code)
       vim.schedule(function()
         pcall(vim.loop.fs_unlink, config_path)
-        if code ~= 0 then
-          cb(nil, table.concat(stderr, "\n"))
+        if done then
           return
         end
-
-        local content, err = parse_response(table.concat(stdout, "\n"))
-        cb(content, err)
+        if code ~= 0 then
+          on_done(nil, table.concat(stderr, "\n"))
+          return
+        end
+        on_done(response, nil)
       end)
     end,
   })
@@ -192,6 +240,7 @@ local function request(messages, cb)
     vim.fn.chanclose(job_id, "stdin")
   else
     pcall(vim.loop.fs_unlink, config_path)
+    on_done(nil, "failed to start request")
   end
 end
 
@@ -210,11 +259,19 @@ function M.ask(message)
     table.insert(messages, { role = "system", content = M.config.system_prompt })
   end
   table.insert(messages, { role = "user", content = message })
-  request(messages, function(content, err)
-    stop_spinner(spinner)
+
+  local window = open_stream_window(message)
+  request_stream(messages, function(_, response)
+    if window and window.render then
+      window.render(response)
+    end
+  end, function(content, err)
     vim.notify("Q: " .. safe_message)
     if err then
       vim.notify(sanitize_message(err), vim.log.levels.ERROR)
+      if window and window.render then
+        window.render("Error: " .. sanitize_message(err))
+      end
       return
     end
 
