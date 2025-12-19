@@ -37,10 +37,11 @@ local function start_spinner(label)
 
   local function render()
     local text = frames[idx] .. " " .. label
-    vim.api.nvim_echo({ { text, "Comment" } }, false, {})
+    vim.api.nvim_echo({ { text, "Comment" } }, false, { on_cmdline = true, clear = true })
     idx = (idx % #frames) + 1
   end
 
+  vim.api.nvim_echo({ { "" } }, false, { clear = true })
   render()
   timer:start(120, 120, vim.schedule_wrap(render))
   return { timer = timer, prev_cmdheight = prev_cmdheight }
@@ -54,7 +55,7 @@ local function stop_spinner(state)
   if state and state.prev_cmdheight ~= nil then
     vim.o.cmdheight = state.prev_cmdheight
   end
-  vim.api.nvim_echo({ { "" } }, false, {})
+  vim.api.nvim_echo({ { "" } }, false, { clear = true })
 end
 
 local function validate_base_url(url)
